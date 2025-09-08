@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  terraform:
-    name: 'Terraform'
+  ecr-and-ecs:
+    name: 'ECR and ECS'
     runs-on: ubuntu-latest
 
     defaults:
