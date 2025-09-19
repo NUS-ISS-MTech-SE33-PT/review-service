@@ -78,6 +78,12 @@ resource "aws_ecs_service" "review_service" {
     assign_public_ip = true
     security_groups  = [data.terraform_remote_state.infra_vpc.outputs.aws_security_group_ecs_sg_id]
   }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.review_service_target_group.arn
+    container_name   = "review-service-container"
+    container_port   = 80
+  }
 }
 
 resource "aws_lb" "review_service_network_load_balancer" {
