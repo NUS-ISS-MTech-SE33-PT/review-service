@@ -34,6 +34,15 @@ data "terraform_remote_state" "infra_ecs" {
   }
 }
 
+data "terraform_remote_state" "infra_iam" {
+  backend = "s3"
+  config = {
+    bucket = "terraform-state-bucket-d55fab12"
+    key    = "prod/infra/iam/terraform.tfstate"
+    region = "ap-southeast-1"
+  }
+}
+
 resource "aws_ecs_task_definition" "review_service_task" {
   family                   = "review-service-task"
   network_mode             = "awsvpc"
