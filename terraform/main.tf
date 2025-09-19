@@ -43,6 +43,15 @@ data "terraform_remote_state" "infra_iam" {
   }
 }
 
+data "terraform_remote_state" "infra_api_gateway" {
+  backend = "s3"
+  config = {
+    bucket = "terraform-state-bucket-d55fab12"
+    key    = "prod/infra/api-gateway/terraform.tfstate"
+    region = "ap-southeast-1"
+  }
+}
+
 resource "aws_ecs_task_definition" "review_service_task" {
   family                   = "review-service-task"
   network_mode             = "awsvpc"
@@ -110,4 +119,19 @@ resource "aws_lb_listener" "review_service_network_load_balancer_listener" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.review_service_target_group.arn
   }
+}
+
+resource "aws_apigatewayv2_integration" "review_service_integration" {
+  api_id                 = data.terraform_remote_state.infra_api_gateway.aws_apigatewayv2_api_makan_go_http_api_id
+  integration_type       = "HTTP_PROXY"
+  integration_uri        = aws_lb.nlb.dns_name
+  connection_type        = "VPC_LINK"
+  connection_id          = data.terraform_remote_state.infra_api_gateway.aws_apigatewayv2_vpc_link_ecs_vpc_link_id
+  payload_format_version = "1.0"
+}
+
+resource "aws_apigatewayv2_route" "route" {
+  api_id    = data.terraform_remote_state.infra_api_gateway.aws_apigatewayv2_api_makan_go_http_api_id
+  route_key = "ANY /{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
 }
