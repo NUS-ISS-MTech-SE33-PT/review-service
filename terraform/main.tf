@@ -122,16 +122,16 @@ resource "aws_lb_listener" "review_service_network_load_balancer_listener" {
 }
 
 resource "aws_apigatewayv2_integration" "review_service_integration" {
-  api_id                 = data.terraform_remote_state.infra_api_gateway.aws_apigatewayv2_api_makan_go_http_api_id
+  api_id                 = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
   integration_type       = "HTTP_PROXY"
   integration_uri        = aws_lb.nlb.dns_name
   connection_type        = "VPC_LINK"
-  connection_id          = data.terraform_remote_state.infra_api_gateway.aws_apigatewayv2_vpc_link_ecs_vpc_link_id
+  connection_id          = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_vpc_link_ecs_vpc_link_id
   payload_format_version = "1.0"
 }
 
 resource "aws_apigatewayv2_route" "route" {
-  api_id    = data.terraform_remote_state.infra_api_gateway.aws_apigatewayv2_api_makan_go_http_api_id
+  api_id    = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
   route_key = "ANY /{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
 }
