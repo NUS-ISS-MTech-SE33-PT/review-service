@@ -81,7 +81,7 @@ resource "aws_ecs_service" "review_service" {
 }
 
 resource "aws_lb" "review_service_network_load_balancer" {
-  name               = "review-service-network-load-balancer"
+  name               = "review-service-nlb"
   internal           = true
   load_balancer_type = "network"
   subnets            = data.terraform_remote_state.infra_vpc.outputs.aws_subnet_ecs_subnet_ids
