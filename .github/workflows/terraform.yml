@@ -40,3 +40,10 @@ jobs:
         IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/makango-review-service:${{ github.sha }}
         docker build -t $IMAGE_URI ./review-service
         docker push $IMAGE_URI
+        echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+    - name: Terraform
+      run: |
+        terraform -chdir=terraform init
+        terraform -chdir=pterraform plan -input=false -out=tfplan
+        terraform -chdir=terraform apply -input=false -var="image_uri=${{ steps.build-image.outputs.image }}" tfplan 
