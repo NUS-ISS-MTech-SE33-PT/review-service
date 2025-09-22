@@ -73,7 +73,7 @@ resource "aws_ecs_task_definition" "review_service_task" {
       ]
       environment = [
         {
-          name  = "ASPNETCORE_HTTP_PORTS"
+          name  = "HTTP_PORTS"
           value = "80"
         }
       ]
@@ -116,12 +116,12 @@ resource "aws_lb_target_group" "review_service_target_group" {
   target_type = "ip"
 
   health_check {
-    path                = "/health" # ✅ Your health endpoint
-    matcher             = "200"
-    interval            = 10
-    timeout             = 5
+    protocol            = "TCP"
+    port                = "traffic-port"
     healthy_threshold   = 2
     unhealthy_threshold = 2
+    interval            = 10
+    timeout             = 5
   }
 }
 
