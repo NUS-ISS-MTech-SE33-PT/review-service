@@ -152,6 +152,10 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
   connection_id          = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_vpc_link_ecs_vpc_link_id
   payload_format_version = "1.0"
   integration_method     = "ANY"
+
+  request_parameters = {
+    "overwrite:path" = "$request.path.proxy"
+  }
 }
 
 resource "aws_apigatewayv2_route" "route" {
