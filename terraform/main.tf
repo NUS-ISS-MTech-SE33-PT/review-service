@@ -108,6 +108,15 @@ resource "aws_lb_target_group" "review_service_target_group" {
   protocol    = "TCP"
   vpc_id      = data.terraform_remote_state.infra_vpc.outputs.aws_vpc_ecs_vpc_id
   target_type = "ip"
+
+  health_check {
+    path                = "/health" # ✅ Your health endpoint
+    matcher             = "200"
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
 }
 
 resource "aws_lb_listener" "review_service_network_load_balancer_listener" {
