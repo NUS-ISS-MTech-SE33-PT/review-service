@@ -9,6 +9,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapGet("/health", () => Results.Ok(DateTime.Now));
 app.MapGet("/", (string message) => $"Hello from review service! you get '{message}'");
 app.MapPost("/", (string message) => $"you post '{message}'");
 app.MapPut("/", (string message) => $"you put '{message}'");
