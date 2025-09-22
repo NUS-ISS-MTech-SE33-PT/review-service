@@ -77,6 +77,14 @@ resource "aws_ecs_task_definition" "review_service_task" {
           value = "80"
         }
       ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/makan-go-api"
+          "awslogs-region"        = "ap-southeast-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
     }
   ])
 }
