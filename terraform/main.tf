@@ -154,7 +154,7 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
   integration_method     = "ANY"
 
   request_parameters = {
-    "overwrite:path" = "$request.path.proxy"
+    "overwrite:path" = "/$request.path.proxy"
   }
 }
 
