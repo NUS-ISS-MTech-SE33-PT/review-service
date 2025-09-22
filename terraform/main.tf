@@ -80,9 +80,9 @@ resource "aws_ecs_task_definition" "review_service_task" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/makan-go-api"
+          "awslogs-group"         = "makan-go/prod/review-service"
           "awslogs-region"        = "ap-southeast-1"
-          "awslogs-stream-prefix" = "ecs"
+          "awslogs-stream-prefix" = "review-service"
         }
       }
     }
@@ -158,4 +158,9 @@ resource "aws_apigatewayv2_route" "route" {
   api_id    = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
   route_key = "ANY /reviews/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
+}
+
+resource "aws_cloudwatch_log_group" "review_service_log" {
+  name              = "makan-go/prod/review-service"
+  retention_in_days = 7
 }
