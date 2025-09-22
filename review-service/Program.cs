@@ -9,6 +9,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+var logger = app.Logger;
+app.Use(async (context, next) =>
+{
+    logger.LogInformation("Request: {Method} {Path}", context.Request.Method, context.Request.Path);
+    await next.Invoke();
+});
+
 app.MapGet("/health", () => Results.Ok(DateTime.Now));
 app.MapGet("/", (string message) => $"Hello from review service! you get '{message}'");
 app.MapPost("/", (string message) => $"you post '{message}'");
