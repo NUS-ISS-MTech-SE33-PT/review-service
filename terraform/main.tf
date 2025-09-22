@@ -71,6 +71,12 @@ resource "aws_ecs_task_definition" "review_service_task" {
           protocol      = "tcp"
         }
       ]
+      environment = [
+        {
+          name  = "ASPNETCORE_HTTP_PORTS"
+          value = "80"
+        }
+      ]
     }
   ])
 }
