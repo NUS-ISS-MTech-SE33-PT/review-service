@@ -111,13 +111,13 @@ resource "aws_lb" "review_service_network_load_balancer" {
 resource "aws_lb_target_group" "review_service_target_group" {
   name        = "review-service-target-group"
   port        = 80
-  protocol    = "TCP"
+  protocol    = "HTTP"
   vpc_id      = data.terraform_remote_state.infra_vpc.outputs.aws_vpc_ecs_vpc_id
   target_type = "ip"
 
   health_check {
-    protocol            = "TCP"
-    port                = "traffic-port"
+    protocol            = "HTTP"
+    path                = "/health"
     healthy_threshold   = 2
     unhealthy_threshold = 2
     interval            = 10
@@ -128,7 +128,7 @@ resource "aws_lb_target_group" "review_service_target_group" {
 resource "aws_lb_listener" "review_service_network_load_balancer_listener" {
   load_balancer_arn = aws_lb.review_service_network_load_balancer.arn
   port              = 80
-  protocol          = "TCP"
+  protocol          = "HTTP"
 
   default_action {
     type             = "forward"
@@ -148,6 +148,6 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
 
 resource "aws_apigatewayv2_route" "route" {
   api_id    = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
-  route_key = "ANY /review/{proxy+}"
+  route_key = "ANY /reviews/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
 }
