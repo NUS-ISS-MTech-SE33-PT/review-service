@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.6.6" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.4" />
+    <PackageReference Include="AWSSDK.SSO" Version="4.0.1.6" />
+    <PackageReference Include="AWSSDK.SSOOIDC" Version="4.0.2.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
   </ItemGroup>
 
