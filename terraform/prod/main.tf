@@ -59,6 +59,7 @@ resource "aws_ecs_task_definition" "review_service_task" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = data.terraform_remote_state.infra_iam.outputs.ecs_task_execution_role_arn
+  task_role_arn            = data.terraform_remote_state.infra_iam.outputs.review_service_task_role.arn
 
   container_definitions = jsonencode([
     {
