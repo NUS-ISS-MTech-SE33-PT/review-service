@@ -185,7 +185,7 @@ resource "aws_apigatewayv2_route" "auth_route" {
   ])
   
   api_id             = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
-  route_key          = "POST /spots/{id}/reviews"
+  route_key          = each.value
   target             = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
   authorization_type = "JWT"
   authorizer_id      = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_cognito_authorizer_id
