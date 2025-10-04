@@ -1,4 +1,4 @@
-name: 'ECR and ECS'
+name: 'Terraform'
 
 on:
   push:
