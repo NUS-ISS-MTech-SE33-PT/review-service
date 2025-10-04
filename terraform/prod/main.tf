@@ -159,15 +159,23 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
   }
 }
 
-resource "aws_apigatewayv2_route" "route" {
+resource "aws_apigatewayv2_route" "no_auth_route" {
   for_each = toset([
     "ANY /reviews/{proxy+}",
-    "ANY /spots/{id}/reviews"
+    "GET /spots/{id}/reviews"
   ])
   
   api_id    = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
   route_key = each.value
   target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_route" {  
+  api_id    = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
+  route_key = "POST /spots/{id}/reviews"
+  target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_cognito_authorizer_id
 }
 
 resource "aws_cloudwatch_log_group" "review_service_log" {
