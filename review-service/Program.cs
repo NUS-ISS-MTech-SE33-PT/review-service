@@ -25,7 +25,7 @@ app.Use(async (context, next) =>
 var reviews = new List<Review>();
 
 // GET /health
-app.MapGet("/health", () => Results.Ok(DateTime.Now));
+app.MapGet("reviews/health", () => Results.Ok(DateTime.Now));
 
 // GET /spots/{id}/reviews
 app.MapGet("/spots/{id}/reviews", async (string id, ReviewRepository repo) =>
