@@ -65,4 +65,32 @@ public class ReviewRepository
             CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(item["createdAt"].N)).UtcDateTime
         }).ToList();
     }
+
+    public async Task<List<Review>> GetByUserIdOrderByCreatedAtDescendingAsync(string userId)
+    {
+        var request = new QueryRequest
+        {
+            TableName = _tableName,
+            IndexName = "reviews_by_user",
+            KeyConditionExpression = "userId = :userId",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":userId"] = new AttributeValue { S = userId }
+            },
+            ScanIndexForward = false
+        };
+
+        var response = await _dynamoDb.QueryAsync(request);
+
+        return response.Items.Select(item => new Review
+        {
+            Id = item["id"].S,
+            SpotId = item["spotId"].S,
+            UserId = item["userId"].S,
+            Rating = int.Parse(item["rating"].N),
+            Text = item["text"].S,
+            PhotoUrls = item.TryGetValue("photoUrls", out AttributeValue? value) ? value.SS.ToArray() : null,
+            CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(item["createdAt"].N)).UtcDateTime
+        }).ToList();
+    }
 }

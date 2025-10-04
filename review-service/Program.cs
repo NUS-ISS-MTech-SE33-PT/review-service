@@ -62,4 +62,15 @@ app.MapPost("/spots/{id}/reviews",
     return Results.Ok(new CreateReviewResponse { Id = review.Id });
 });
 
+// GET /users/me/reviews
+app.MapPost("/users/me/reviews",
+    async (CreateReviewRequest request, HttpContext ctx, ReviewRepository repo) =>
+{
+    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+
+    var reviews = await repo.GetByUserIdOrderByCreatedAtDescendingAsync(userId);
+    return Results.Ok(new GetReviewsResponse { Items = reviews });
+});
+
 app.Run();
