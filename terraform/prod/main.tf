@@ -158,6 +158,10 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
     "overwrite:path" = "$request.path",
     "append:header.x-user-sub" = "$context.authorizer.jwt.claims.sub"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_apigatewayv2_route" "no_auth_route" {
@@ -169,6 +173,10 @@ resource "aws_apigatewayv2_route" "no_auth_route" {
   api_id    = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
   route_key = each.value
   target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_apigatewayv2_route" "auth_route" {  
@@ -177,6 +185,10 @@ resource "aws_apigatewayv2_route" "auth_route" {
   target    = "integrations/${aws_apigatewayv2_integration.review_service_integration.id}"
   authorization_type = "JWT"
   authorizer_id      = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_cognito_authorizer_id
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_cloudwatch_log_group" "review_service_log" {
