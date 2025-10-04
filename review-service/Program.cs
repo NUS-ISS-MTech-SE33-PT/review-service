@@ -47,7 +47,7 @@ app.MapGet("/spots/{id}/reviews", async (string id, ReviewRepository repo) =>
 app.MapPost("/spots/{id}/reviews",
     async (string id, CreateReviewRequest request, HttpContext ctx, ReviewRepository repo) =>
 {
-    var jwt = ctx.Request.Headers.Authorization.FirstOrDefault();
+    var jwt = ctx.Request.Headers.Authorization.FirstOrDefault()?["Bearer ".Length..].Trim();
     if (jwt == null) return Results.Unauthorized();
     var userId = GetSubFromJwt(jwt);
 
