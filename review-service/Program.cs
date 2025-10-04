@@ -1,6 +1,5 @@
 using Amazon.DynamoDBv2;
 
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
