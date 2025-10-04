@@ -1,7 +1,5 @@
-using Amazon;
 using Amazon.DynamoDBv2;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.IdentityModel.Tokens;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
@@ -47,9 +45,8 @@ app.MapGet("/spots/{id}/reviews", async (string id, ReviewRepository repo) =>
 app.MapPost("/spots/{id}/reviews",
     async (string id, CreateReviewRequest request, HttpContext ctx, ReviewRepository repo) =>
 {
-    var jwt = ctx.Request.Headers.Authorization.FirstOrDefault()?["Bearer ".Length..].Trim();
-    if (jwt == null) return Results.Unauthorized();
-    var userId = GetSubFromJwt(jwt);
+    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
     var review = new Review
     {
@@ -65,13 +62,4 @@ app.MapPost("/spots/{id}/reviews",
     return Results.Ok(new CreateReviewResponse { Id = review.Id });
 });
 
-
 app.Run();
-
-
-static string GetSubFromJwt(string jwt)
-{
-    var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-    var token = tokenHandler.ReadJwtToken(jwt);
-    return token.Claims.First(claim => claim.Type == "sub").Value;
-}
