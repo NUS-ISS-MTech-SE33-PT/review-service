@@ -18,7 +18,14 @@ if (app.Environment.IsDevelopment())
 var logger = app.Logger;
 app.Use(async (context, next) =>
 {
-    logger.LogInformation("Request: {Method} {Path}", context.Request.Method, context.Request.Path);
+    var utcNow = DateTime.UtcNow.ToString("o");
+    var method = context.Request.Method;
+    var path = context.Request.Path;
+    var headers = string.Join("; ", context.Request.Headers.Select(h => $"{h.Key}: {h.Value}"));
+
+    logger.LogInformation("{UtcNow}\t{Method}\t{Path} | Headers: {Headers}",
+        utcNow, method, path, headers);
+
     await next.Invoke();
 });
 
