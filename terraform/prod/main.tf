@@ -165,7 +165,7 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
 
 resource "aws_apigatewayv2_route" "no_auth_route" {
   for_each = toset([
-    "ANY /reviews/health",
+    "GET /reviews/health",
     "GET /spots/{id}/reviews"
   ])
 
