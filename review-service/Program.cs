@@ -63,8 +63,7 @@ app.MapPost("/spots/{id}/reviews",
 });
 
 // GET /users/me/reviews
-app.MapPost("/users/me/reviews",
-    async (CreateReviewRequest request, HttpContext ctx, ReviewRepository repo) =>
+app.MapGet("/users/me/reviews", async (HttpContext ctx, ReviewRepository repo) =>
 {
     var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();

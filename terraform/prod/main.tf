@@ -165,7 +165,7 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
 
 resource "aws_apigatewayv2_route" "no_auth_route" {
   for_each = toset([
-    "ANY /reviews/{proxy+}",
+    "ANY /reviews/health",
     "GET /spots/{id}/reviews"
   ])
 
@@ -181,7 +181,7 @@ resource "aws_apigatewayv2_route" "no_auth_route" {
 resource "aws_apigatewayv2_route" "auth_route" {
   for_each = toset([
     "POST /spots/{id}/reviews",
-    "GET /users/{id}/reviews"
+    "GET /users/me/reviews"
   ])
   
   api_id             = data.terraform_remote_state.infra_api_gateway.outputs.aws_apigatewayv2_api_makan_go_http_api_id
