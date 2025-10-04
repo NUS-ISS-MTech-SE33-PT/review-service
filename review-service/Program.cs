@@ -49,7 +49,6 @@ app.MapPost("/spots/{id}/reviews",
 {
     var jwt = ctx.Request.Headers.Authorization.FirstOrDefault()?["Bearer ".Length..].Trim();
     if (jwt == null) return Results.Unauthorized();
-    logger.LogInformation("JWT: {Jwt}", jwt);
     var userId = GetSubFromJwt(jwt);
 
     var review = new Review

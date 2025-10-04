@@ -154,7 +154,8 @@ resource "aws_apigatewayv2_integration" "review_service_integration" {
   integration_method     = "ANY"
 
   request_parameters = {
-    "overwrite:path" = "$request.path"
+    "overwrite:path" = "$request.path",
+    "integration.request.header.x-user-sub" = "$context.authorizer.claims.sub"
   }
 
   lifecycle {
