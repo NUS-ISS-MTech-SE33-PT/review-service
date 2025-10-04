@@ -38,16 +38,18 @@ public class ReviewRepository
         await _dynamoDb.PutItemAsync(request);
     }
 
-    public async Task<List<Review>> GetBySpotIdAsync(string spotId)
+    public async Task<List<Review>> GetBySpotIdOrderByCreatedAtDescendingAsync(string spotId)
     {
         var request = new QueryRequest
         {
             TableName = _tableName,
+            IndexName = "reviews_by_createdAt",
             KeyConditionExpression = "spotId = :spotId",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 [":spotId"] = new AttributeValue { S = spotId }
-            }
+            },
+            ScanIndexForward = false
         };
 
         var response = await _dynamoDb.QueryAsync(request);

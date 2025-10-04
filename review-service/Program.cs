@@ -37,7 +37,7 @@ app.MapGet("reviews/health", () => Results.Ok(DateTime.Now));
 // GET /spots/{id}/reviews
 app.MapGet("/spots/{id}/reviews", async (string id, ReviewRepository repo) =>
 {
-    var reviews = await repo.GetBySpotIdAsync(id);
+    var reviews = await repo.GetBySpotIdOrderByCreatedAtDescendingAsync(id);
     return Results.Ok(new GetReviewsResponse { Items = reviews });
 });
 
