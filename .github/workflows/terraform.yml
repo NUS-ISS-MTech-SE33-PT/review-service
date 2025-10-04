@@ -1,4 +1,4 @@
-name: 'Terraform'
+name: 'Docker Build and Terraform Deploy'
 
 on:
   push:
@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  ecr-and-ecs:
-    name: 'ECR and ECS'
+  docker-build-and-terraform-deploy:
+    name: 'Docker Build and Terraform Deploy'
     runs-on: ubuntu-latest
 
     defaults:
