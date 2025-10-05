@@ -28,8 +28,6 @@ app.Use(async (context, next) =>
     await next.Invoke();
 });
 
-var reviews = new List<Review>();
-
 // GET /reviews/health
 app.MapGet("/reviews/health", () => Results.Ok(DateTime.Now));
 
