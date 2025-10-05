@@ -44,6 +44,6 @@ jobs:
 
     - name: Terraform
       run: |
-        terraform -chdir=terraform/prod init
-        terraform -chdir=terraform/prod plan -input=false -out=tfplan -var="image_uri=${{ steps.build-image.outputs.image }}"
-        terraform -chdir=terraform/prod apply -input=false tfplan 
+        terraform -chdir=terraform init
+        terraform -chdir=terraform plan -input=false -out=tfplan -var="image_uri=${{ steps.build-image.outputs.image }}"
+        terraform -chdir=terraform apply -input=false tfplan 
