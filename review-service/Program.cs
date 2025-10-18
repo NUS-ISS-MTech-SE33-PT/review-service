@@ -45,11 +45,46 @@ app.MapPost("/spots/{id}/reviews",
     var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
+    if (string.IsNullOrWhiteSpace(request.SpotId))
+    {
+        return Results.BadRequest(new { message = "spotId is required." });
+    }
+
+    if (!string.Equals(request.SpotId, id, StringComparison.Ordinal))
+    {
+        return Results.BadRequest(new { message = "spotId in body must match route id." });
+    }
+
+    static double Clamp(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value)) return 0;
+        if (value < 0) return 0;
+        if (value > 5) return 5;
+        return Math.Round(value, 2, MidpointRounding.AwayFromZero);
+    }
+
+    var taste = Clamp(request.TasteRating);
+    var environment = Clamp(request.EnvironmentRating);
+    var service = Clamp(request.ServiceRating);
+
+    if (taste <= 0 || environment <= 0 || service <= 0)
+    {
+        return Results.BadRequest(new { message = "Taste, environment, and service ratings must be greater than zero." });
+    }
+
+    var rawOverall = Clamp(request.Rating);
+    var overall = rawOverall > 0
+        ? rawOverall
+        : Math.Round((taste + environment + service) / 3d, 2, MidpointRounding.AwayFromZero);
+
     var review = new Review
     {
-        SpotId = id,
+        SpotId = request.SpotId,
         UserId = userId,
-        Rating = request.Rating,
+        Rating = overall,
+        TasteRating = taste,
+        EnvironmentRating = environment,
+        ServiceRating = service,
         Text = request.Text,
         PhotoUrls = request.PhotoUrls
     };
