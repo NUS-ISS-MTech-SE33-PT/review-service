@@ -104,4 +104,64 @@ app.MapGet("/users/me/reviews", async (HttpContext ctx, ReviewRepository repo) =
     return Results.Ok(new GetReviewsResponse { Items = reviews });
 });
 
+// GET /reviews/recent
+app.MapGet("/reviews/recent", async (int? limit, ReviewRepository repo) =>
+{
+    var safeLimit = Math.Clamp(limit.GetValueOrDefault(20), 1, 50);
+    var items = await repo.GetRecentReviewsWithSpotAsync(safeLimit);
+    return Results.Ok(new GetRecentReviewsResponse { Items = items });
+});
+
+// GET /spots/{id}/favorite
+app.MapGet("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
+{
+    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrWhiteSpace(id))
+    {
+        return Results.BadRequest(new { message = "Spot id is required." });
+    }
+
+    var isFavorite = await repo.IsFavoriteAsync(userId, id);
+    return Results.Ok(new { spotId = id, isFavorite });
+});
+
+// PUT /spots/{id}/favorite
+app.MapPut("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
+{
+    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrWhiteSpace(id))
+    {
+        return Results.BadRequest(new { message = "Spot id is required." });
+    }
+
+    await repo.AddFavoriteAsync(userId, id);
+    return Results.NoContent();
+});
+
+// DELETE /spots/{id}/favorite
+app.MapDelete("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
+{
+    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrWhiteSpace(id))
+    {
+        return Results.BadRequest(new { message = "Spot id is required." });
+    }
+
+    await repo.RemoveFavoriteAsync(userId, id);
+    return Results.NoContent();
+});
+
+// GET /users/me/favorites
+app.MapGet("/users/me/favorites", async (HttpContext ctx, ReviewRepository repo) =>
+{
+    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+
+    var items = await repo.GetFavoritesWithSpotAsync(userId);
+    return Results.Ok(new GetFavoritesResponse { Items = items });
+});
+
 app.Run();
