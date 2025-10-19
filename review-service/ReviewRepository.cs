@@ -272,52 +272,35 @@ public class ReviewRepository
             return result;
         }
 
-        const int batchSize = 100;
-        for (var i = 0; i < uniqueIds.Count; i += batchSize)
+        try
         {
-            var batch = uniqueIds.Skip(i).Take(batchSize).ToList();
-            if (batch.Count == 0)
+            const int batchSize = 100;
+            for (var i = 0; i < uniqueIds.Count; i += batchSize)
             {
-                continue;
-            }
-
-            var request = new BatchGetItemRequest
-            {
-                RequestItems = new Dictionary<string, KeysAndAttributes>
+                var batch = uniqueIds.Skip(i).Take(batchSize).ToList();
+                if (batch.Count == 0)
                 {
-                    [_spotTableName] = new KeysAndAttributes
+                    continue;
+                }
+
+                var request = new BatchGetItemRequest
+                {
+                    RequestItems = new Dictionary<string, KeysAndAttributes>
                     {
-                        Keys = batch.Select(id => new Dictionary<string, AttributeValue>
+                        [_spotTableName] = new KeysAndAttributes
                         {
-                            ["id"] = new AttributeValue { S = id }
-                        }).ToList()
+                            Keys = batch.Select(id => new Dictionary<string, AttributeValue>
+                            {
+                                ["id"] = new AttributeValue { S = id }
+                            }).ToList()
+                        }
                     }
-                }
-            };
+                };
 
-            var response = await _dynamoDb.BatchGetItemAsync(request, cancellationToken);
-            if (response.Responses.TryGetValue(_spotTableName, out var items))
-            {
-                foreach (var item in items)
+                var response = await _dynamoDb.BatchGetItemAsync(request, cancellationToken);
+                if (response.Responses.TryGetValue(_spotTableName, out var items))
                 {
-                    if (item.TryGetValue("id", out var idAttr) && !string.IsNullOrEmpty(idAttr.S))
-                    {
-                        result[idAttr.S] = item;
-                    }
-                }
-            }
-
-            var unprocessed = response.UnprocessedKeys;
-            while (unprocessed != null && unprocessed.Count > 0)
-            {
-                var retry = await _dynamoDb.BatchGetItemAsync(new BatchGetItemRequest
-                {
-                    RequestItems = unprocessed
-                }, cancellationToken);
-
-                if (retry.Responses.TryGetValue(_spotTableName, out var retryItems))
-                {
-                    foreach (var item in retryItems)
+                    foreach (var item in items)
                     {
                         if (item.TryGetValue("id", out var idAttr) && !string.IsNullOrEmpty(idAttr.S))
                         {
@@ -326,8 +309,32 @@ public class ReviewRepository
                     }
                 }
 
-                unprocessed = retry.UnprocessedKeys;
+                var unprocessed = response.UnprocessedKeys;
+                while (unprocessed != null && unprocessed.Count > 0)
+                {
+                    var retry = await _dynamoDb.BatchGetItemAsync(new BatchGetItemRequest
+                    {
+                        RequestItems = unprocessed
+                    }, cancellationToken);
+
+                    if (retry.Responses.TryGetValue(_spotTableName, out var retryItems))
+                    {
+                        foreach (var item in retryItems)
+                        {
+                            if (item.TryGetValue("id", out var idAttr) && !string.IsNullOrEmpty(idAttr.S))
+                            {
+                                result[idAttr.S] = item;
+                            }
+                        }
+                    }
+
+                    unprocessed = retry.UnprocessedKeys;
+                }
             }
+        }
+        catch (AmazonDynamoDBException ex)
+        {
+            _logger.LogWarning(ex, "Failed to hydrate spot metadata for favorites or recent reviews.");
         }
 
         return result;

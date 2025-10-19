@@ -42,7 +42,7 @@ app.MapGet("/spots/{id}/reviews", async (string id, ReviewRepository repo) =>
 app.MapPost("/spots/{id}/reviews",
     async (string id, CreateReviewRequest request, HttpContext ctx, ReviewRepository repo) =>
 {
-    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    var userId = JwtSubjectResolver.ResolveUserId(ctx);
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
     if (string.IsNullOrWhiteSpace(request.SpotId))
@@ -97,7 +97,7 @@ app.MapPost("/spots/{id}/reviews",
 // GET /users/me/reviews
 app.MapGet("/users/me/reviews", async (HttpContext ctx, ReviewRepository repo) =>
 {
-    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    var userId = JwtSubjectResolver.ResolveUserId(ctx);
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
     var reviews = await repo.GetByUserIdOrderByCreatedAtDescendingAsync(userId);
@@ -115,7 +115,7 @@ app.MapGet("/reviews/recent", async (int? limit, ReviewRepository repo) =>
 // GET /spots/{id}/favorite
 app.MapGet("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
 {
-    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    var userId = JwtSubjectResolver.ResolveUserId(ctx);
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
     if (string.IsNullOrWhiteSpace(id))
     {
@@ -129,7 +129,7 @@ app.MapGet("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepo
 // PUT /spots/{id}/favorite
 app.MapPut("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
 {
-    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    var userId = JwtSubjectResolver.ResolveUserId(ctx);
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
     if (string.IsNullOrWhiteSpace(id))
     {
@@ -143,7 +143,7 @@ app.MapPut("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepo
 // DELETE /spots/{id}/favorite
 app.MapDelete("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
 {
-    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    var userId = JwtSubjectResolver.ResolveUserId(ctx);
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
     if (string.IsNullOrWhiteSpace(id))
     {
@@ -157,7 +157,7 @@ app.MapDelete("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewR
 // GET /users/me/favorites
 app.MapGet("/users/me/favorites", async (HttpContext ctx, ReviewRepository repo) =>
 {
-    var userId = ctx.Request.Headers["x-user-sub"].FirstOrDefault();
+    var userId = JwtSubjectResolver.ResolveUserId(ctx);
     if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
     var items = await repo.GetFavoritesWithSpotAsync(userId);
