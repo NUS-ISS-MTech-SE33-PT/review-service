@@ -7,6 +7,7 @@ public class Review
     public double TasteRating { get; set; }
     public double EnvironmentRating { get; set; }
     public double ServiceRating { get; set; }
+    public double PricePerPerson { get; set; }
     public string Text { get; set; } = default!;
     public string[]? PhotoUrls { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
