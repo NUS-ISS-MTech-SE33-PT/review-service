@@ -63,6 +63,14 @@ app.MapPost("/spots/{id}/reviews",
         return Math.Round(value, 2, MidpointRounding.AwayFromZero);
     }
 
+    static double ClampPrice(double value, double maxAllowed)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value)) return 0;
+        if (value < 0) return 0;
+        if (value > maxAllowed) return maxAllowed;
+        return Math.Round(value, 2, MidpointRounding.AwayFromZero);
+    }
+
     var taste = Clamp(request.TasteRating);
     var environment = Clamp(request.EnvironmentRating);
     var service = Clamp(request.ServiceRating);
@@ -76,6 +84,13 @@ app.MapPost("/spots/{id}/reviews",
     var overall = rawOverall > 0
         ? rawOverall
         : Math.Round((taste + environment + service) / 3d, 2, MidpointRounding.AwayFromZero);
+    var priceCap = app.Configuration.GetValue<double?>("ReviewPrice:Max") ?? 1000d;
+    var price = ClampPrice(request.PricePerPerson, priceCap);
+
+    if (price <= 0)
+    {
+        return Results.BadRequest(new { message = "pricePerPerson must be greater than zero." });
+    }
 
     var review = new Review
     {
@@ -85,6 +100,7 @@ app.MapPost("/spots/{id}/reviews",
         TasteRating = taste,
         EnvironmentRating = environment,
         ServiceRating = service,
+        PricePerPerson = price,
         Text = request.Text,
         PhotoUrls = request.PhotoUrls
     };

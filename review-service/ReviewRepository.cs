@@ -39,6 +39,7 @@ public class ReviewRepository
             ["tasteRating"] = new AttributeValue { N = FormatAverage(review.TasteRating) },
             ["environmentRating"] = new AttributeValue { N = FormatAverage(review.EnvironmentRating) },
             ["serviceRating"] = new AttributeValue { N = FormatAverage(review.ServiceRating) },
+            ["pricePerPerson"] = new AttributeValue { N = FormatAverage(review.PricePerPerson) },
             ["text"] = new AttributeValue { S = review.Text },
             ["createdAt"] = new AttributeValue
             {
@@ -229,6 +230,7 @@ public class ReviewRepository
             TasteRating = TryParseDouble(item, "tasteRating", rating),
             EnvironmentRating = TryParseDouble(item, "environmentRating", rating),
             ServiceRating = TryParseDouble(item, "serviceRating", rating),
+            PricePerPerson = TryParseDouble(item, "pricePerPerson", 0d),
             Text = item["text"].S,
             PhotoUrls = item.TryGetValue("photoUrls", out var value) ? value.SS.ToArray() : null,
             CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(item["createdAt"].N, CultureInfo.InvariantCulture)).UtcDateTime
@@ -433,12 +435,16 @@ public class ReviewRepository
             var currentServiceSum = item.TryGetValue("serviceSum", out var serviceSumAttr)
                 ? ParseDouble(serviceSumAttr.N)
                 : 0d;
+            var currentPriceSum = item.TryGetValue("priceSum", out var priceSumAttr)
+                ? ParseDouble(priceSumAttr.N)
+                : 0d;
 
             var newCount = currentCount + 1;
             var newRatingSum = currentRatingSum + review.Rating;
             var newTasteSum = currentTasteSum + review.TasteRating;
             var newEnvironmentSum = currentEnvironmentSum + review.EnvironmentRating;
             var newServiceSum = currentServiceSum + review.ServiceRating;
+            var newPriceSum = currentPriceSum + review.PricePerPerson;
 
             var expressionAttributeValues = new Dictionary<string, AttributeValue>
             {
@@ -447,10 +453,12 @@ public class ReviewRepository
                 [":tasteSum"] = new AttributeValue { N = FormatSum(newTasteSum) },
                 [":environmentSum"] = new AttributeValue { N = FormatSum(newEnvironmentSum) },
                 [":serviceSum"] = new AttributeValue { N = FormatSum(newServiceSum) },
+                [":priceSum"] = new AttributeValue { N = FormatSum(newPriceSum) },
                 [":rating"] = new AttributeValue { N = FormatAverage(CalculateAverage(newRatingSum, newCount)) },
                 [":tasteAvg"] = new AttributeValue { N = FormatAverage(CalculateAverage(newTasteSum, newCount)) },
                 [":environmentAvg"] = new AttributeValue { N = FormatAverage(CalculateAverage(newEnvironmentSum, newCount)) },
                 [":serviceAvg"] = new AttributeValue { N = FormatAverage(CalculateAverage(newServiceSum, newCount)) },
+                [":avgPrice"] = new AttributeValue { N = FormatAverage(CalculateAverage(newPriceSum, newCount)) },
                 [":now"] = new AttributeValue { N = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture) }
             };
 
@@ -477,7 +485,7 @@ public class ReviewRepository
                     {
                         ["id"] = new AttributeValue { S = review.SpotId }
                     },
-                    UpdateExpression = "SET reviewCount = :reviewCount, ratingSum = :ratingSum, tasteSum = :tasteSum, environmentSum = :environmentSum, serviceSum = :serviceSum, rating = :rating, tasteAvg = :tasteAvg, environmentAvg = :environmentAvg, serviceAvg = :serviceAvg, lastReviewAt = :now",
+                    UpdateExpression = "SET reviewCount = :reviewCount, ratingSum = :ratingSum, tasteSum = :tasteSum, environmentSum = :environmentSum, serviceSum = :serviceSum, priceSum = :priceSum, rating = :rating, tasteAvg = :tasteAvg, environmentAvg = :environmentAvg, serviceAvg = :serviceAvg, avgPrice = :avgPrice, lastReviewAt = :now",
                     ExpressionAttributeValues = expressionAttributeValues,
                     ConditionExpression = conditionExpression
                 }, cancellationToken);
