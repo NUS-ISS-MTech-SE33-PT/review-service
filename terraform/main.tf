@@ -76,10 +76,10 @@ resource "aws_ecs_task_definition" "review_service_task" {
         {
           name  = "HTTP_PORTS"
           value = "80"
-        }
+        },
         {
           name  = "ReviewPrice__Max"
-          value = "1000"
+          value = "10000"
         }
       ]
       logConfiguration = {
