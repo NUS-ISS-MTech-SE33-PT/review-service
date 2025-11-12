@@ -1,3 +1,4 @@
+
 using Amazon.DynamoDBv2;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -181,3 +182,5 @@ app.MapGet("/users/me/favorites", async (HttpContext ctx, ReviewRepository repo)
 });
 
 app.Run();
+
+public partial class Program { }

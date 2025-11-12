@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "review-service", "review-service\review-service.csproj", "{F6026D88-07AF-C8B6-E17D-ECBA9AA1255F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "review-service.UnitTests", "review-service.UnitTests\review-service.UnitTests.csproj", "{967345A7-5CE9-C3E6-AADD-F522077EBB7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,11 +16,15 @@ Global
 		{F6026D88-07AF-C8B6-E17D-ECBA9AA1255F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F6026D88-07AF-C8B6-E17D-ECBA9AA1255F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F6026D88-07AF-C8B6-E17D-ECBA9AA1255F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{967345A7-5CE9-C3E6-AADD-F522077EBB7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{967345A7-5CE9-C3E6-AADD-F522077EBB7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{967345A7-5CE9-C3E6-AADD-F522077EBB7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{967345A7-5CE9-C3E6-AADD-F522077EBB7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {F014809B-C76A-4BFB-B96D-4976B316B3E8}
+		SolutionGuid = {61504A14-E88E-4BB5-985B-AD26826926FE}
 	EndGlobalSection
 EndGlobal
