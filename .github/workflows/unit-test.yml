@@ -1,0 +1,53 @@
+name: Unit Test with Coverage
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Install Coverlet
+      run: dotnet tool install --global coverlet.console
+    
+    - name: Install ReportGenerator
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+    - name: Scan
+      run: |
+        dotnet build --no-restore --configuration Release 
+        coverlet ./review-service.UnitTests/bin/Release/net9.0/review-service.UnitTests.dll \
+          --target "dotnet" \
+          --targetargs "test --no-build --configuration Release" \
+          -f=opencover \
+          -o="coverage.xml" \
+          --threshold 35 \
+          --threshold-type line \
+          --threshold-stat total || exit_code=$?
+          echo "EXIT_CODE=$exit_code" >> $GITHUB_ENV
+    
+    - name: Generate Report
+      run: reportgenerator -reports:coverage.xml -targetdir:coverage-report -reporttypes:Html
+
+    - name: Upload Coverage Report Folder
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage-report/
+
+    - name: Exit with Snyk exit code
+      run: exit $EXIT_CODE
+    
