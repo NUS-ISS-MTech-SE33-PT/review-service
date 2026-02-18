@@ -27,7 +27,7 @@ jobs:
       # -----------------------------
       - name: Run Snyk Open Source
         run: snyk test --severity-threshold=high
-        working-directory: ./review-service
+        working-directory: review-service
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
