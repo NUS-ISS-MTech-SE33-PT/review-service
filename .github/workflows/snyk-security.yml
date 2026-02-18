@@ -26,8 +26,7 @@ jobs:
       # SCA (Open Source)
       # -----------------------------
       - name: Run Snyk Open Source
-        run: snyk test --severity-threshold=high
-        working-directory: review-service
+        run: snyk test review-service/review-service.csproj --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
