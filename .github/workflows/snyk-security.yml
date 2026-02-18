@@ -1,40 +1,40 @@
-- uses: actions/checkout@v4
-
-- name: Setup Snyk
-  uses: snyk/actions/setup@master
-  env:
-    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-# -----------------------------
-# SCA (Open Source)
-# -----------------------------
-- name: Run Snyk Open Source
-  run: snyk test --severity-threshold=high
-  working-directory: ./review-service
-  env:
-    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-# -----------------------------
-# SAST (Code)
-# -----------------------------
-- name: Run Snyk Code
-  run: snyk code test --severity-threshold=high
-  working-directory: ./review-service
-  env:
-    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-# -----------------------------
-# Build Docker Image
-# -----------------------------
-- name: Build Docker Image
-  run: docker build -t review-service:latest .
-  working-directory: ./review-service
-
-# -----------------------------
-# Container Scan
-# -----------------------------
-- name: Run Snyk Container
-  run: snyk container test review-service:latest --file=Dockerfile
-  working-directory: ./review-service
+  - uses: actions/checkout@v4
+  
+  - name: Setup Snyk
+    uses: snyk/actions/setup@master
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  
+  # -----------------------------
+  # SCA (Open Source)
+  # -----------------------------
+  - name: Run Snyk Open Source
+    run: snyk test --severity-threshold=high
+    working-directory: ./review-service
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  
+  # -----------------------------
+  # SAST (Code)
+  # -----------------------------
+  - name: Run Snyk Code
+    run: snyk code test --severity-threshold=high
+    working-directory: ./review-service
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  
+  # -----------------------------
+  # Build Docker Image
+  # -----------------------------
+  - name: Build Docker Image
+    run: docker build -t review-service:latest .
+    working-directory: ./review-service
+  
+  # -----------------------------
+  # Container Scan
+  # -----------------------------
+  - name: Run Snyk Container
+    run: snyk container test review-service:latest --file=Dockerfile
+    working-directory: ./review-service
   env:
     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
