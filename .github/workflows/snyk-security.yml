@@ -41,8 +41,7 @@ jobs:
       # -----------------------------
       - name: Snyk Open Source monitor
         run: snyk monitor --all-projects
-        working-directory: review-service
-
+        
       # -----------------------------
       # Build Docker Image
       # -----------------------------
