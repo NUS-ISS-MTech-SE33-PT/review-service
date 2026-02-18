@@ -34,27 +34,28 @@ jobs:
       # -----------------------------
       - name: Snyk Code test
         run: snyk code test --sarif
-        working-directory: review-service
+        working-directory: ./review-service
 
       # -----------------------------
       # SCA (Open Source)
       # -----------------------------
       - name: Snyk Open Source monitor
         run: snyk monitor --all-projects
+        working-directory: ./review-service
         
       # -----------------------------
       # Build Docker Image
       # -----------------------------
       - name: Build Docker image
         run: docker build -t review-service:latest .
-        working-directory: review-service
+        working-directory: ./review-service
 
       # -----------------------------
       # Container Scan
       # -----------------------------
       - name: Snyk Container monitor
         run: snyk container monitor review-service:latest --file=Dockerfile
-        working-directory: review-service
+        working-directory: ./review-service
 
       # -----------------------------
       # Upload SARIF
