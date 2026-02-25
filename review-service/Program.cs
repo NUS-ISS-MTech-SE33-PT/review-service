@@ -1,5 +1,5 @@
-
 using Amazon.DynamoDBv2;
+using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
@@ -9,6 +9,50 @@ builder.Services.AddAWSService<IAmazonDynamoDB>();
 builder.Services.AddScoped<ReviewRepository>();
 
 var app = builder.Build();
+
+IResult ApiError(HttpContext context, int statusCode, string code, string message)
+{
+    return Results.Json(new
+    {
+        code,
+        message,
+        traceId = context.TraceIdentifier
+    }, statusCode: statusCode);
+}
+
+static string SanitizeHeaders(IHeaderDictionary headers)
+{
+    var maskedHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Authorization",
+        "Cookie",
+        "Set-Cookie",
+        "x-user-sub"
+    };
+
+    return string.Join("; ", headers.Select(header =>
+    {
+        var value = maskedHeaders.Contains(header.Key) ? "***" : header.Value.ToString();
+        return $"{header.Key}: {value}";
+    }));
+}
+
+app.UseExceptionHandler(exceptionApp =>
+{
+    exceptionApp.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        app.Logger.LogError(exception, "Unhandled exception while processing request.");
+
+        var message = app.Environment.IsDevelopment()
+            ? (exception?.Message ?? "Unhandled server error.")
+            : "An unexpected error occurred.";
+
+        var result = ApiError(context, StatusCodes.Status500InternalServerError, "internal_error", message);
+        await result.ExecuteAsync(context);
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -21,7 +65,7 @@ app.Use(async (context, next) =>
     var utcNow = DateTime.UtcNow.ToString("o");
     var method = context.Request.Method;
     var path = context.Request.Path;
-    var headers = string.Join("; ", context.Request.Headers.Select(h => $"{h.Key}: {h.Value}"));
+    var headers = SanitizeHeaders(context.Request.Headers);
 
     logger.LogInformation("{UtcNow}\t{Method}\t{Path} | Headers: {Headers}",
         utcNow, method, path, headers);
@@ -45,16 +89,19 @@ app.MapPost("/spots/{id}/reviews",
     async (string id, CreateReviewRequest request, HttpContext ctx, ReviewRepository repo) =>
 {
     var userId = JwtSubjectResolver.ResolveUserId(ctx);
-    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrEmpty(userId))
+    {
+        return ApiError(ctx, StatusCodes.Status401Unauthorized, "unauthorized", "Authentication is required.");
+    }
 
     if (string.IsNullOrWhiteSpace(request.SpotId))
     {
-        return Results.BadRequest(new { message = "spotId is required." });
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "spotId is required.");
     }
 
     if (!string.Equals(request.SpotId, id, StringComparison.Ordinal))
     {
-        return Results.BadRequest(new { message = "spotId in body must match route id." });
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "spotId in body must match route id.");
     }
 
     static double Clamp(double value)
@@ -79,7 +126,7 @@ app.MapPost("/spots/{id}/reviews",
 
     if (taste <= 0 || environment <= 0 || service <= 0)
     {
-        return Results.BadRequest(new { message = "Taste, environment, and service ratings must be greater than zero." });
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "Taste, environment, and service ratings must be greater than zero.");
     }
 
     var rawOverall = Clamp(request.Rating);
@@ -91,7 +138,7 @@ app.MapPost("/spots/{id}/reviews",
 
     if (price <= 0)
     {
-        return Results.BadRequest(new { message = "pricePerPerson must be greater than zero." });
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "pricePerPerson must be greater than zero.");
     }
 
     var review = new Review
@@ -116,7 +163,10 @@ app.MapPost("/spots/{id}/reviews",
 app.MapGet("/users/me/reviews", async (HttpContext ctx, ReviewRepository repo) =>
 {
     var userId = JwtSubjectResolver.ResolveUserId(ctx);
-    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrEmpty(userId))
+    {
+        return ApiError(ctx, StatusCodes.Status401Unauthorized, "unauthorized", "Authentication is required.");
+    }
 
     var reviews = await repo.GetByUserIdOrderByCreatedAtDescendingAsync(userId);
     return Results.Ok(new GetReviewsResponse { Items = reviews });
@@ -134,10 +184,13 @@ app.MapGet("/reviews/recent", async (int? limit, ReviewRepository repo) =>
 app.MapGet("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
 {
     var userId = JwtSubjectResolver.ResolveUserId(ctx);
-    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrEmpty(userId))
+    {
+        return ApiError(ctx, StatusCodes.Status401Unauthorized, "unauthorized", "Authentication is required.");
+    }
     if (string.IsNullOrWhiteSpace(id))
     {
-        return Results.BadRequest(new { message = "Spot id is required." });
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "Spot id is required.");
     }
 
     var isFavorite = await repo.IsFavoriteAsync(userId, id);
@@ -148,10 +201,13 @@ app.MapGet("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepo
 app.MapPut("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
 {
     var userId = JwtSubjectResolver.ResolveUserId(ctx);
-    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrEmpty(userId))
+    {
+        return ApiError(ctx, StatusCodes.Status401Unauthorized, "unauthorized", "Authentication is required.");
+    }
     if (string.IsNullOrWhiteSpace(id))
     {
-        return Results.BadRequest(new { message = "Spot id is required." });
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "Spot id is required.");
     }
 
     await repo.AddFavoriteAsync(userId, id);
@@ -162,10 +218,13 @@ app.MapPut("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepo
 app.MapDelete("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
 {
     var userId = JwtSubjectResolver.ResolveUserId(ctx);
-    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrEmpty(userId))
+    {
+        return ApiError(ctx, StatusCodes.Status401Unauthorized, "unauthorized", "Authentication is required.");
+    }
     if (string.IsNullOrWhiteSpace(id))
     {
-        return Results.BadRequest(new { message = "Spot id is required." });
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "Spot id is required.");
     }
 
     await repo.RemoveFavoriteAsync(userId, id);
@@ -176,7 +235,10 @@ app.MapDelete("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewR
 app.MapGet("/users/me/favorites", async (HttpContext ctx, ReviewRepository repo) =>
 {
     var userId = JwtSubjectResolver.ResolveUserId(ctx);
-    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    if (string.IsNullOrEmpty(userId))
+    {
+        return ApiError(ctx, StatusCodes.Status401Unauthorized, "unauthorized", "Authentication is required.");
+    }
 
     var items = await repo.GetFavoritesWithSpotAsync(userId);
     return Results.Ok(new GetFavoritesResponse { Items = items });
