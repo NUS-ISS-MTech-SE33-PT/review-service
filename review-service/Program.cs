@@ -14,6 +14,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers["Strict-Transport-Security"] =
+            "max-age=31536000; includeSubDomains";
+        await next.Invoke();
+    });
+}
 
 var logger = app.Logger;
 app.Use(async (context, next) =>
