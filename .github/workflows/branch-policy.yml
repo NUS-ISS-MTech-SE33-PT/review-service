@@ -2,7 +2,8 @@ name: Branch Policy
 
 on:
   pull_request:
+    branches: ["*"]
 
 jobs:
   branch-policy:
-    uses: NUS-ISS-MTech-SE33-PT/workflows/branch-policy.yml@v1.0.x
+    uses: NUS-ISS-MTech-SE33-PT/workflows/.github/workflows/branch-policy.yml@v1.0.x
