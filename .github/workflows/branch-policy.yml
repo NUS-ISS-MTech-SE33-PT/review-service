@@ -5,4 +5,4 @@ on:
 
 jobs:
   branch-policy:
-    uses: NUS-ISS-MTech-SE33-PT/workflows/.github/workflows/branch-policy.yml@v1.0.2
+    uses: NUS-ISS-MTech-SE33-PT/workflows/.github/workflows/branch-policy.yml@v1.0.4
