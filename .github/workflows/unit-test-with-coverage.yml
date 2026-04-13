@@ -1,0 +1,13 @@
+name: Unit Test with Coverage
+
+on:
+  pull_request:
+    branches: ["dev"]
+
+jobs:
+  unit-test-with-coverage:
+    uses: NUS-ISS-MTech-SE33-PT/workflows/.github/workflows/dotnet-unit-test-with-coverage.yml@v1.0.4
+    with:
+      unit-test-dll-path: './review-service.UnitTests/bin/Release/net9.0/review-service.UnitTests.dll'
+
+    
