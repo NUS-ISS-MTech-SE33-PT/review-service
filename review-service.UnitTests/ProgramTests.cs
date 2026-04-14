@@ -19,6 +19,7 @@ public class ProgramTests
     private Mock<IAmazonDynamoDB> _dynamoDbMock = null!;
     private const string Issuer = "https://tests.example.com/review-service";
     private const string AllowedClientId = "review-client";
+    private const string SecondaryAllowedClientId = "review-client-admin";
     private const string SigningKey = "review-service-test-signing-key-123456";
 
     [SetUp]
@@ -43,6 +44,7 @@ public class ProgramTests
                     {
                         [$"{JwtValidationOptions.SectionName}:Issuer"] = Issuer,
                         [$"{JwtValidationOptions.SectionName}:AllowedClientIds:0"] = AllowedClientId,
+                        [$"{JwtValidationOptions.SectionName}:AllowedClientIds:1"] = SecondaryAllowedClientId,
                         [$"{JwtValidationOptions.SectionName}:SigningKey"] = SigningKey,
                         ["DynamoDb"] = "reviews-test",
                         ["SpotDynamoDb"] = "spots-test",
@@ -54,7 +56,7 @@ public class ProgramTests
                     services.PostConfigure<JwtValidationOptions>(options =>
                     {
                         options.Issuer = Issuer;
-                        options.AllowedClientIds = [AllowedClientId];
+                        options.AllowedClientIds = [AllowedClientId, SecondaryAllowedClientId];
                         options.SigningKey = SigningKey;
                     });
                     services.AddScoped(_ => new ReviewRepository(
@@ -149,6 +151,19 @@ public class ProgramTests
     {
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new("Bearer", CreateToken());
+
+        var response = await client.GetAsync("/users/me/reviews");
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    public async Task MyReviews_ShouldReturnOk_WhenSecondAllowedClientIdIsUsed()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new(
+            "Bearer",
+            CreateToken(clientId: SecondaryAllowedClientId));
 
         var response = await client.GetAsync("/users/me/reviews");
 

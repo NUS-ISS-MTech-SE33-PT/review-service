@@ -7,7 +7,8 @@ public class JwtValidationOptions
 
     public List<string> AllowedClientIds { get; set; } =
     [
-        "47d5aql1gg87e093dfoqv8tbqs"
+        "47d5aql1gg87e093dfoqv8tbqs",
+        "oirif86fvv6eddccs4d37ccgb"
     ];
 
     public string? SigningKey { get; set; }
