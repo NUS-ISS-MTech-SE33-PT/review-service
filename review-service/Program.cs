@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonDynamoDB>();
 builder.Services.AddScoped<ReviewRepository>();
+builder.Services.AddOptions<JwtValidationOptions>()
+    .Bind(builder.Configuration.GetSection(JwtValidationOptions.SectionName));
+builder.Services.AddSingleton<
+    Microsoft.Extensions.Options.IConfigureOptions<JwtBearerOptions>,
+    ConfigureJwtBearerOptions>();
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -69,6 +79,8 @@ else
 }
 
 var logger = app.Logger;
+app.UseAuthentication();
+app.UseAuthorization();
 app.Use(async (context, next) =>
 {
     var utcNow = DateTime.UtcNow.ToString("o");
@@ -166,7 +178,7 @@ app.MapPost("/spots/{id}/reviews",
     await repo.SaveAsync(review);
 
     return Results.Ok(new CreateReviewResponse { Id = review.Id });
-});
+}).RequireAuthorization();
 
 // GET /users/me/reviews
 app.MapGet("/users/me/reviews", async (HttpContext ctx, ReviewRepository repo) =>
@@ -179,7 +191,7 @@ app.MapGet("/users/me/reviews", async (HttpContext ctx, ReviewRepository repo) =
 
     var reviews = await repo.GetByUserIdOrderByCreatedAtDescendingAsync(userId);
     return Results.Ok(new GetReviewsResponse { Items = reviews });
-});
+}).RequireAuthorization();
 
 // GET /reviews/recent
 app.MapGet("/reviews/recent", async (int? limit, ReviewRepository repo) =>
@@ -204,7 +216,7 @@ app.MapGet("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepo
 
     var isFavorite = await repo.IsFavoriteAsync(userId, id);
     return Results.Ok(new { spotId = id, isFavorite });
-});
+}).RequireAuthorization();
 
 // PUT /spots/{id}/favorite
 app.MapPut("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
@@ -221,7 +233,7 @@ app.MapPut("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepo
 
     await repo.AddFavoriteAsync(userId, id);
     return Results.NoContent();
-});
+}).RequireAuthorization();
 
 // DELETE /spots/{id}/favorite
 app.MapDelete("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewRepository repo) =>
@@ -238,7 +250,7 @@ app.MapDelete("/spots/{id}/favorite", async (string id, HttpContext ctx, ReviewR
 
     await repo.RemoveFavoriteAsync(userId, id);
     return Results.NoContent();
-});
+}).RequireAuthorization();
 
 // GET /users/me/favorites
 app.MapGet("/users/me/favorites", async (HttpContext ctx, ReviewRepository repo) =>
@@ -251,7 +263,7 @@ app.MapGet("/users/me/favorites", async (HttpContext ctx, ReviewRepository repo)
 
     var items = await repo.GetFavoritesWithSpotAsync(userId);
     return Results.Ok(new GetFavoritesResponse { Items = items });
-});
+}).RequireAuthorization();
 
 app.Run();
 

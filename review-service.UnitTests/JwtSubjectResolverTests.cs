@@ -1,8 +1,5 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace review_service.UnitTests;
 
@@ -14,139 +11,39 @@ public class JwtSubjectResolverTests
     }
 
     [Test]
-    public void ResolveUserId_ShouldReturnHeaderUser_WhenXUserSubExists()
+    public void ResolveUserId_ShouldReturnSubClaim_WhenPrincipalIsAuthenticated()
     {
-        // Arrange
         var context = new DefaultHttpContext();
-        context.Request.Headers["x-user-sub"] = "user-123";
+        context.User = new ClaimsPrincipal(
+        [
+            new ClaimsIdentity(
+            [
+                new Claim("sub", "user-123")
+            ], "Bearer")
+        ]);
 
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.EqualTo("user-123"));
+        Assert.That(JwtSubjectResolver.ResolveUserId(context), Is.EqualTo("user-123"));
     }
 
     [Test]
-    public void ResolveUserId_ShouldReturnNull_WhenNoHeaders()
+    public void ResolveUserId_ShouldReturnNull_WhenPrincipalIsAnonymous()
     {
-        // Arrange
         var context = new DefaultHttpContext();
-
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.Null);
+        Assert.That(JwtSubjectResolver.ResolveUserId(context), Is.Null);
     }
 
     [Test]
-    public void ResolveUserId_ShouldReturnNull_WhenAuthorizationHeaderInvalidFormat()
+    public void ResolveUserId_ShouldReturnNull_WhenAuthenticatedPrincipalHasNoSub()
     {
-        // Arrange
         var context = new DefaultHttpContext();
-        context.Request.Headers["Authorization"] = "InvalidToken";
+        context.User = new ClaimsPrincipal(
+        [
+            new ClaimsIdentity(
+            [
+                new Claim("token_use", "access")
+            ], "Bearer")
+        ]);
 
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.Null);
-    }
-
-    [Test]
-    public void ResolveUserId_ShouldReturnSub_FromValidJwt()
-    {
-        // Arrange
-        var payload = new { sub = "user-456" };
-        var json = JsonSerializer.Serialize(payload);
-        var base64Payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('=');
-
-        var token = $"header.{base64Payload}.signature";
-        var context = new DefaultHttpContext();
-        context.Request.Headers["Authorization"] = $"Bearer {token}";
-
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.EqualTo("user-456"));
-    }
-
-    [Test]
-    public void ResolveUserId_ShouldReturnNull_WhenJwtHasNoSub()
-    {
-        // Arrange
-        var payload = new { name = "no-sub" };
-        var json = JsonSerializer.Serialize(payload);
-        var base64Payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('=');
-
-        var token = $"header.{base64Payload}.signature";
-        var context = new DefaultHttpContext();
-        context.Request.Headers["Authorization"] = $"Bearer {token}";
-
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.Null);
-    }
-
-    [Test]
-    public void ResolveUserId_ShouldLogWarning_WhenJwtParsingFails()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        var loggerFactory = new LoggerFactory();
-        services.AddSingleton<ILoggerFactory>(loggerFactory);
-        var provider = services.BuildServiceProvider();
-
-        var context = new DefaultHttpContext
-        {
-            RequestServices = provider
-        };
-        // malformed JWT
-        context.Request.Headers["Authorization"] = "Bearer invalid.token.value";
-
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.Null);
-        // (Optional) you can verify logs here if using a mock ILoggerFactory
-    }
-
-    [Test]
-    public void ResolveUserId_ShouldReturnNull_WhenTokenIsEmpty()
-    {
-        // Arrange
-        var context = new DefaultHttpContext();
-        context.Request.Headers["Authorization"] = "Bearer ";
-
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.Null);
-    }
-
-    [Test]
-    public void ResolveUserId_ShouldReturnNull_WhenJwtHasNoDot()
-    {
-        // Arrange
-        var context = new DefaultHttpContext();
-        context.Request.Headers["Authorization"] = "Bearer abcdef";
-
-        // Act
-        var result = JwtSubjectResolver.ResolveUserId(context);
-
-        // Assert
-        Assert.That(result, Is.Null);
+        Assert.That(JwtSubjectResolver.ResolveUserId(context), Is.Null);
     }
 }
