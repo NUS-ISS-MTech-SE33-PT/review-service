@@ -37,10 +37,21 @@ jobs:
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
           docker push $REGISTRY/$REPOSITORY:latest
 
-      - name: Force new ECS deployment
+      - name: Deploy to ECS (if running)
         run: |
-          aws ecs update-service \
+          STATUS=$(aws ecs describe-services \
             --cluster prod-cluster \
-            --service review-service \
-            --force-new-deployment \
-            --region ap-southeast-1
+            --services review-service \
+            --query 'services[0].status' \
+            --output text 2>/dev/null || echo "MISSING")
+
+          if [ "$STATUS" = "ACTIVE" ]; then
+            echo "ECS service is active, triggering deployment..."
+            aws ecs update-service \
+              --cluster prod-cluster \
+              --service review-service \
+              --force-new-deployment \
+              --region ap-southeast-1
+          else
+            echo "ECS service not active (status: $STATUS), skipping deploy. Image pushed to ECR."
+          fi
