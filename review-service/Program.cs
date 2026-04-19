@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2;
+using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 
@@ -7,7 +8,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonDynamoDB>();
+builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddScoped<ReviewRepository>();
+builder.Services.Configure<SpotSubmissionStorageOptions>(builder.Configuration.GetSection("SpotSubmissionStorage"));
+builder.Services.AddScoped<ReviewPhotoValidationService>();
 builder.Services.AddOptions<JwtValidationOptions>()
     .Bind(builder.Configuration.GetSection(JwtValidationOptions.SectionName));
 builder.Services.AddSingleton<
@@ -107,7 +111,7 @@ app.MapGet("/spots/{id}/reviews", async (string id, ReviewRepository repo) =>
 
 // POST /spots/{id}/reviews (requires auth)
 app.MapPost("/spots/{id}/reviews",
-    async (string id, CreateReviewRequest request, HttpContext ctx, ReviewRepository repo) =>
+    async (string id, CreateReviewRequest request, HttpContext ctx, ReviewRepository repo, ReviewPhotoValidationService photoValidationService) =>
 {
     var userId = JwtSubjectResolver.ResolveUserId(ctx);
     if (string.IsNullOrEmpty(userId))
@@ -162,6 +166,39 @@ app.MapPost("/spots/{id}/reviews",
         return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "pricePerPerson must be greater than zero.");
     }
 
+    var photoUrls = request.PhotoUrls?.Select(url => url?.Trim() ?? string.Empty).ToArray() ?? [];
+    var photoStorageKeys = request.PhotoStorageKeys?.Select(key => key?.Trim() ?? string.Empty).ToArray() ?? [];
+
+    if (photoUrls.Length != photoStorageKeys.Length)
+    {
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "photoUrls and photoStorageKeys must have the same length.");
+    }
+
+    if (photoUrls.Any(string.IsNullOrWhiteSpace) || photoStorageKeys.Any(string.IsNullOrWhiteSpace))
+    {
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "photoUrls and photoStorageKeys cannot contain empty values.");
+    }
+
+    try
+    {
+        for (var i = 0; i < photoStorageKeys.Length; i++)
+        {
+            if (!photoValidationService.IsOwnedByUser(photoStorageKeys[i], photoUrls[i], userId))
+            {
+                return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", "photoUrls/photoStorageKeys must belong to the authenticated user.");
+            }
+
+            await photoValidationService.ValidateUploadedObjectAsync(
+                photoStorageKeys[i],
+                photoUrls[i],
+                ctx.RequestAborted);
+        }
+    }
+    catch (ArgumentException ex)
+    {
+        return ApiError(ctx, StatusCodes.Status400BadRequest, "validation_error", ex.Message);
+    }
+
     var review = new Review
     {
         SpotId = request.SpotId,
@@ -172,7 +209,7 @@ app.MapPost("/spots/{id}/reviews",
         ServiceRating = service,
         PricePerPerson = price,
         Text = request.Text,
-        PhotoUrls = request.PhotoUrls
+        PhotoUrls = photoUrls.Length == 0 ? null : photoUrls
     };
 
     await repo.SaveAsync(review);
