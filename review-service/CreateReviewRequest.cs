@@ -8,4 +8,5 @@ public class CreateReviewRequest
     public double PricePerPerson { get; set; }
     public string Text { get; set; } = default!;
     public string[]? PhotoUrls { get; set; }
+    public string[]? PhotoStorageKeys { get; set; }
 }
