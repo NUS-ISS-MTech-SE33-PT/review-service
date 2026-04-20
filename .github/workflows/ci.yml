@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ── Job 1: Unit Tests ────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore
+        run: dotnet restore review-service.sln
+
+      - name: Test with coverage threshold
+        run: |
+          dotnet test review-service.sln \
+            --configuration Release \
+            --no-restore \
+            --collect:"XPlat Code Coverage" \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Threshold=35
+
+  # ── Job 2: Docker Build ──────────────────────────────────────────────────────
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Build Docker image
+        run: docker build -t review-service:${{ github.sha }} ./review-service
+
+  # ── Job 3: Lint / SAST (Snyk) ───────────────────────────────────────────────
+  sast:
+    name: Lint / SAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore
+        run: dotnet restore review-service.sln
+
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master  # TODO: pin to SHA
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Snyk Open Source (SCA)
+        run: snyk test --file=review-service.sln --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Snyk Code (SAST)
+        run: snyk code test --severity-threshold=high
+        working-directory: ./review-service
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Build image for container scan
+        run: docker build -t review-service:scan ./review-service
+
+      - name: Snyk Container
+        run: snyk container test review-service:scan --file=Dockerfile --severity-threshold=high
+        working-directory: ./review-service
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # ── Fan-in: Tag {sha}-verified only if all jobs above pass ──────────────────
+  tag-verified:
+    name: Tag Verified
+    needs: [unit-tests, build, sast]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Push {sha}-verified tag
+        run: |
+          TAG="${{ github.sha }}-verified"
+          git tag "$TAG"
+          git push origin "$TAG"
