@@ -1,9 +1,10 @@
 name: CD
 
 on:
-  push:
-    tags:
-    - '*-verified'
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
@@ -13,31 +14,18 @@ jobs:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
 
     steps:
-      - name: Extract SHA from tag
+      - name: Resolve SHA
         id: resolve
-        run: |
-          TAG="${{ github.ref_name }}"
-          if [[ "$TAG" != *-verified ]]; then
-            echo "ERROR: input must be a *-verified tag."
-            exit 1
-          fi
-          echo "sha=${TAG%-verified}" >> "$GITHUB_OUTPUT"
+        run: echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout at target SHA
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           ref: ${{ steps.resolve.outputs.sha }}
           fetch-depth: 0
-
-      - name: Verify SHA is on main branch
-        run: |
-          git fetch origin main
-          if ! git merge-base --is-ancestor "${{ steps.resolve.outputs.sha }}" origin/main; then
-            echo "ERROR: ${{ steps.resolve.outputs.sha }} is not on the main branch."
-            exit 1
-          fi
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37
