@@ -9,11 +9,13 @@ on:
 permissions:
   contents: write
   id-token: write
+  deployments: write
 
 jobs:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    environment: production
     if: github.event.workflow_run.conclusion == 'success'
 
     steps:
