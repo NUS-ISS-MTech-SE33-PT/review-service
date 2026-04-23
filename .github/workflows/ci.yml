@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -66,7 +69,7 @@ jobs:
         run: dotnet restore review-service.sln
 
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@master  # TODO: pin to SHA
+        uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -90,19 +93,3 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-  # ── Fan-in: Tag {sha}-verified only if all jobs above pass ──────────────────
-  tag-verified:
-    name: Tag Verified
-    needs: [unit-tests, build, sast]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-
-      - name: Push {sha}-verified tag
-        run: |
-          TAG="${{ github.sha }}-verified"
-          git tag "$TAG"
-          git push origin "$TAG"
