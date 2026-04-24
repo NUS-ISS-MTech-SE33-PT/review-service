@@ -36,9 +36,13 @@ jobs:
             --configuration Release \
             --no-restore \
             --collect:"XPlat Code Coverage" \
+            --results-directory coverage-results \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Threshold=35 \
                DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-      
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
       - name: Generate Report
         run: |
           reportgenerator \
